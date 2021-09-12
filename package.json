@@ -1,0 +1,33 @@
+{
+  "name": "@irdsrl/dexbitrage",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/irdsrl/dexbitrage.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/irdsrl/dexbitrage/issues"
+  },
+  "homepage": "https://github.com/irdsrl/dexbitrage#readme",
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.24.2"
+  },
+  "dependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-etherscan": "^2.1.6",
+    "eth-crypto": "^2.0.0",
+    "ethers": "^5.4.6",
+    "ganache": "^6.4.5",
+    "hardhat": "^2.6.4",
+    "solc": "^0.8.7-fixed"
+  }
+}
