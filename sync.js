@@ -19,14 +19,13 @@ const getAllPairs = async (type) => {
   const provider = new ethers.providers.JsonRpcProvider(providerUrl[type]);
   console.log(`factory ${type} address: ${address[type].factory}`);
 
-  const matrix = fs.existsSync(`./${type}-matrix.json`) ? require(`./${type}-matrix`) : {};
+  const matrix = fs.existsSync(`./matrix/${type}.json`) ? require(`./matrix/${type}`) : {};
   const factory = new ethers.Contract(address[type].factory, abi.factory, provider);
   const totalPairs = await factory.allPairsLength();
   const n = parseInt(`${totalPairs}`);
   for (let i = indexStart[type] || 0; i < totalPairs; i++) {
     try {
       const pairAddress = await factory.allPairs(i);
-      // console.log(`pair ${i} address ${pairAddress}`);
       const pair = new ethers.Contract(pairAddress, abi.pair, provider);
       const token0 = await pair.token0();
       const token1 = await pair.token1();
@@ -65,7 +64,7 @@ const getAllPairs = async (type) => {
         tokenContracts[token1] = t;
       }
       console.log(`${type}(${i}/${n}) ${tokens[token0].symbol}:${tokens[token0].name} -> ${tokens[token1].symbol}:${tokens[token1].name}`);
-      fs.writeFileSync(`./${type}-matrix.json`, JSON.stringify(matrix, null, 2));
+      fs.writeFileSync(`./matrix/${type}.json`, JSON.stringify(matrix, null, 2));
     } catch (e) {
 
     }
