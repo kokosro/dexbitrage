@@ -11,19 +11,33 @@ const sync = (startType) => {
     if (!tokens[base]) {
       return common;
     }
+
     return Object.keys(matrix[startType][base]).reduce((c, quote) => {
       if (!tokens[quote]) {
         return c;
       }
-      if (types.reduce((r, t) => r && !!matrix[t][base] && !!matrix[t][base][quote], true)) {
+      const commonExchanges = types.reduce((r, t) => {
+        if (!!matrix[t][base] && !!matrix[t][base][quote]) {
+          return r + 1;
+        }
+        return r;
+      }, 0);
+      if (commonExchanges > 1) {
         if (!common[base]) {
           common[base] = {};
         }
         commonsFound += 1;
-        c[base][quote] = types.reduce((r, t) => ({
-          ...r,
-          [t]: matrix[t][base][quote],
-        }), {});
+
+        c[base][quote] = types.reduce((r, t) => {
+          if (matrix[t] && !!matrix[t][base] && !!matrix[t][base][quote]) {
+            return {
+              ...r,
+              [t]: matrix[t][base][quote],
+            };
+          }
+
+          return r;
+        }, {});
       }
       return c;
     }, common);
@@ -32,4 +46,4 @@ const sync = (startType) => {
   fs.writeFileSync('./matrix/common.json', JSON.stringify(commons, null, 2));
 };
 
-sync('mdex');
+sync('pancake');
