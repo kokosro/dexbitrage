@@ -1,14 +1,17 @@
 const { ethers } = require('ethers');
 const fs = require('fs');
-
+const { NonceManager } = require('@ethersproject/experimental');
 const providerUrl = require('./providers');
-
+const dexbitrageInfo = require('./migrated-live/Dexbitrage');
 const matrix = require('./matrix');
 
 const abi = require('./abis');
 const address = require('./addresses');
 const tokens = require('./tokens');
 
+const prices = require('./prices');
+
+const privateKeyMainnet = fs.readFileSync('.mainnet').toString().trim();
 const tc = {};
 let weth;
 let ap;
@@ -26,90 +29,19 @@ const exchange = Object.entries(providerUrl).reduce((r, [t, url]) => {
   };
 }, {});
 
-const getPriceMap = async () => {
-  console.log(`${(new Date()).toISOString()} refreshing priceMap`);
-  const prices = await Object.keys(matrix.common).reduce(async (pr, base) => {
-    const r = await pr;
-    const pm = await Object.keys(matrix.common[base]).reduce(async (pqr, quote) => {
-      const qr = await pqr;
-      const exes = await Promise.all(Object.keys(providerUrl).map(async (ex) => {
-        if (!matrix[ex] || !matrix[ex][base] || !matrix[ex][base][quote]) {
-          return [ex, ethers.BigNumber.from('0')];
-        }
-        try {
-          const result = await exchange[ex].router.getAmountsOut(ethers.utils.parseUnits('1', tokens[base].decimals), [base, quote]);
-          return [ex, result[1]];
-        } catch (e) {
-          return [ex, ethers.BigNumber.from('0')];
-        }
-      }));
-      return {
-        ...qr,
-        [quote]: exes.reduce((er, [ex, unitPrice]) => ({ ...er, [ex]: unitPrice }), qr[quote] || {}),
-      };
-    }, r[base] || {});
-    return {
-      ...r,
-      [base]: pm,
-    };
-  }, Promise.resolve({}));
-  console.log(`${(new Date()).toISOString()} priceMap refreshed`);
-  return prices;
-};
+const signer = new NonceManager(new ethers.Wallet(privateKeyMainnet, exchange.pancake.provider));
+const dexbitrage = new ethers.Contract(dexbitrageInfo.address, dexbitrageInfo.abi, signer);
+const wethAddress = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
 
 const check = async () => {
-  const allExchanges = Object.keys(providerUrl);
+  const wethBalance = await dexbitrage.balance(wethAddress);
+  const exchangeKeys = Object.keys(providerUrl);
 
-  const priceMap = await getPriceMap();
-  // console.log(priceMap);
-  allExchanges.forEach((startExchange) => {
-    const otherExchanges = Object.keys(providerUrl).filter((x) => x !== startExchange);
-    Object.keys(matrix.common).reduce((r, base) => {
-      const startAmount = ethers.utils.parseUnits('1', tokens[base].decimals);
-      return Object.keys(matrix.common[base]).reduce((pr1, quote) => {
-        const baseSymbol = tokens[base].symbol;
-        const quoteSymbol = tokens[quote].symbol;
-        // console.log(`${base} ${quote}`);
-        let entry;
-
-        entry = priceMap[base][quote][startExchange];
-        if (!entry) return null;
-        let rev;
-        const beep = '';
-        const revs = otherExchanges.map((ex) => {
-          if (priceMap[quote][base][ex]) {
-            rev = entry.mul(priceMap[quote][base][ex]).div(ethers.BigNumber.from(10).pow(tokens[base].decimals));
-            return [ex, rev];
-          }
-          return [ex, ethers.BigNumber.from('0')];
-        });
-        let best;
-        for (let i = 0; i < revs.length; i++) {
-        //        console.log(revs[i]);
-          if (!best) {
-            best = revs[i];
-          } else if (revs[i][1].gt(best[1])) {
-            best = revs[i];
-          }
-        }
-        if (best) {
-          if (best[1].gt(startAmount)) {
-            if (best[1].sub(startAmount).mul(10000).div(startAmount).lt(2000)) {
-              console.log(`\x07 OPPORTUNITY ${startExchange} ${baseSymbol} ${ethers.utils.formatUnits(startAmount, tokens[base].decimals)} -> ${best[0]} through ${quoteSymbol} -> ${baseSymbol} ${ethers.utils.formatUnits(best[1], tokens[base].decimals)}`);
-            } else {
-              //   console.log(`WRONG ${startExchange} ${baseSymbol} ${ethers.utils.formatUnits(startAmount, tokens[base].decimals)} -> ${best[0]} through ${quoteSymbol} -> ${baseSymbol} ${ethers.utils.formatUnits(best[1], tokens[base].decimals)}`);
-            }
-          } else {
-            //   console.log(`${startExchange} ${baseSymbol} ${ethers.utils.formatUnits(startAmount, tokens[base].decimals)} -> ${best[0]} through ${quoteSymbol} -> ${baseSymbol} ${ethers.utils.formatUnits(best[1], tokens[base].decimals)}`);
-          }
-        } else {
-          // console.log(`${startExchange} ${baseSymbol}->${quoteSymbol} no price`);
-        }
-        return null;
-      // process.exit(1);
-      }, null);
-    }, null);
+  const priceMap = await prices.universe({
+    matrix, tokens, exchangeKeys, exchange,
   });
+  console.log(priceMap);
+
   setTimeout(() => {
     check();
   }, 15000);
