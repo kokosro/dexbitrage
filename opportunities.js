@@ -44,7 +44,7 @@ const check = async () => {
 
   setTimeout(() => {
     check();
-  }, 15000);
+  }, 60000);
 };
 
 check(process.argv[2] || 'ape');

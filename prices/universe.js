@@ -15,6 +15,7 @@ const getPriceMap = async ({
         }
         try {
           const result = await exchange[ex].router.getAmountsOut(ethers.utils.parseUnits('1', tokens[base].decimals), [base, quote]);
+          console.log(`${ex} ${tokens[base].symbol}->${tokens[quote].symbol} price fetched ${ethers.utils.formatUnits(result[1], tokens[quote].decimals)}`);
           if (!mapPrice[ex]) {
             mapPrice[ex] = {};
           }
@@ -38,7 +39,7 @@ const getPriceMap = async ({
     };
   }, Promise.resolve({}));
   console.log(`${(new Date()).toISOString()} priceMap refreshed`);
-  return mapPrice;
+  return { byExchange: mapPrice, byAsset: prices };
 };
 
 module.exports = getPriceMap;
