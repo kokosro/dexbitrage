@@ -15,7 +15,7 @@ const getPriceMap = async ({
         }
         try {
           const result = await exchange[ex].router.getAmountsOut(ethers.utils.parseUnits('1', tokens[base].decimals), [base, quote]);
-          console.log(`${ex} ${tokens[base].symbol}->${tokens[quote].symbol} price fetched ${ethers.utils.formatUnits(result[1], tokens[quote].decimals)}`);
+          console.log(`${ex.padEnd(8, ' ')}\t${tokens[base].symbol.padEnd(8, ' ')}\t${tokens[quote].symbol.padEnd(8, ' ')}\t${ethers.utils.formatUnits(result[1], tokens[quote].decimals)}`);
           if (!mapPrice[ex]) {
             mapPrice[ex] = {};
           }
