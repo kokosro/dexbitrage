@@ -22,7 +22,7 @@ const sync = (startType) => {
         }
         return r;
       }, 0);
-      if (commonExchanges > 1) {
+      if (commonExchanges > 0) {
         if (!common[base]) {
           common[base] = {};
         }

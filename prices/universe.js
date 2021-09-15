@@ -4,11 +4,56 @@ const getPriceMap = async ({
   matrix, exchangeKeys, exchange, tokens,
 }) => {
   console.log(`${(new Date()).toISOString()} refreshing priceMap`);
+  const startTime = Date.now();
   const mapPrice = {};
+
+  const bases = Object.keys(matrix.common);
+  const results = [];
+  await Promise.all(bases.map(async (base) => {
+    await Promise.all(Object.keys(matrix.common[base]).map(async (quote) => {
+      await Promise.all(exchangeKeys.map(async (ex) => {
+        if (base == '0xacFC95585D80Ab62f67A14C566C1b7a49Fe91167' || quote == '0xacFC95585D80Ab62f67A14C566C1b7a49Fe91167' || !matrix[ex] || !matrix[ex][base] || !matrix[ex][base][quote] // || !['pancake','ape',,].includes(ex)
+        ) {
+          return;
+        }
+        try {
+          const result = await exchange[ex].router.getAmountsOut(ethers.utils.parseUnits('1', tokens[base].decimals), [base, quote]);
+          //   console.log(`${ex.padEnd(8, ' ')}\t${tokens[base].symbol.padEnd(8, ' ')}\t${tokens[quote].symbol.padEnd(8, ' ')}\t${ethers.utils.formatUnits(result[1], tokens[quote].decimals)}`);
+          results.push([base, quote, ex, result[1]]);
+        } catch (e) {
+
+        }
+      }));
+    }));
+  }));
+
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    const [base, quote, ex, price] = result;
+    if (!mapPrice[base]) {
+      mapPrice[base] = {};
+    }
+    if (!mapPrice[base][quote]) {
+      mapPrice[base][quote] = {};
+    }
+    if (!mapPrice[base][quote][ex]) {
+      mapPrice[base][quote][ex] = price;
+    }
+    mapPrice[base][quote][ex] = price;
+  }
+
+  /*
   const prices = await Object.keys(matrix.common).reduce(async (pr, base) => {
     const r = await pr;
+    if (base == '0xacFC95585D80Ab62f67A14C566C1b7a49Fe91167') {
+      return r;
+    }
     const pm = await Object.keys(matrix.common[base]).reduce(async (pqr, quote) => {
+
       const qr = await pqr;
+      if (quote == '0xacFC95585D80Ab62f67A14C566C1b7a49Fe91167') {
+        return qr;
+      }
       const exes = await Promise.all(exchangeKeys.map(async (ex) => {
         if (!matrix[ex] || !matrix[ex][base] || !matrix[ex][base][quote]) {
           return [ex, ethers.BigNumber.from('0')];
@@ -38,8 +83,10 @@ const getPriceMap = async ({
       [base]: pm,
     };
   }, Promise.resolve({}));
-  console.log(`${(new Date()).toISOString()} priceMap refreshed`);
-  return { byExchange: mapPrice, byAsset: prices };
+*/
+  const endTime = ((Date.now() - startTime) / 1000);
+  console.log(`${(new Date()).toISOString()} priceMap refreshed ${endTime} seconds`);
+  return { byExchange: mapPrice, byAsset: mapPrice };
 };
 
 module.exports = getPriceMap;

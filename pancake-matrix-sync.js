@@ -18,6 +18,9 @@ const sync = async (type) => {
     const quotes = Object.keys(matrix[type][base]);
     await quotes.reduce(async (pr1, quote) => {
       await pr1;
+      if (type === 'baby') {
+        return;
+      }
       try {
         if (!matrix[type][base]) {
           matrix[type][base] = {};
@@ -58,9 +61,9 @@ const sync = async (type) => {
           console.log(`${quote} error ${e.message}`);
         }
 
-        if (!matrix[type][base][quote]) {
+        if (!matrix[type][base][quote] && type !== 'baby') {
           const pair = await factory.getPair(base, quote);
-          if (pair != ethers.constants.AddressZero) {
+          if (pair != ethers.constants.AddressZero && type !== 'baby') {
             matrix[type][base][quote] = {
               pair, reverse: false,
             };
@@ -84,7 +87,7 @@ const sync = async (type) => {
 };
 
 sync('ape');
-sync('baby');
+// sync('baby');
 sync('mdex');
 sync('biswap');
 

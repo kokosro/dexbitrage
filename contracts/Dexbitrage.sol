@@ -99,8 +99,8 @@ contract Dexbitrage {
     require(startAmount > 0, "DB: ISA");
     uint256 startBalance = balance(path[0]);
     address startToken = path[0];
-    address currentToken = path[0];
-    uint256 pathIndex = 0;
+    //    address currentToken = path[0];
+    //uint256 pathIndex = 0;
     uint256 iamount = startAmount;
     for(uint256 i = 0; i < routers.length; i++){
       address[] memory usePath = new address[](2);
@@ -120,7 +120,7 @@ contract Dexbitrage {
     }
     require(iamount > startAmount, "DB: NB1");
     require(startBalance < balance(startToken), "DB: NB2");
-    return iamount.sub(startAmount);
+    return iamount;//.sub(startAmount);
   }
   
 }
