@@ -15,8 +15,8 @@ const privateKeyMainnet = fs.readFileSync('.mainnet').toString().trim();
 
 const getGasPrice = async (provider) => {
   const currentGasPrice = await provider.getGasPrice();
-  let maxFeePerGas = ethers.BigNumber.from('60000000000');
-  let maxPriorityFeePerGas = ethers.BigNumber.from('1000000000');
+  let maxFeePerGas = ethers.BigNumber.from('6000000000');
+  let maxPriorityFeePerGas = ethers.BigNumber.from('100000000');
 
   const block = await provider.getBlock('latest');
 
@@ -106,13 +106,18 @@ const check = async () => {
 
       '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
       '0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402',
-      '0x55d398326f99059fF775485246999027B3197955',
-      //      '0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47',
+      // '0x55d398326f99059fF775485246999027B3197955',
+      '0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47',
       // '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3',
       // '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
     ];
   const startAmounts = {
-    '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c': ethers.BigNumber.from('174000780000000'),
+    '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c': ethers.BigNumber.from('20000000000000000'),
+    '0xE02dF9e3e622DeBdD69fb838bB799E3F168902c5': ethers.BigNumber.from('1000000000000000000'),
+    '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82': ethers.BigNumber.from('100000000000000000'),
+    '0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402': ethers.BigNumber.from('100000000000000000'),
+    '0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47': ethers.BigNumber.from('100000000000000000'),
+    '0x55d398326f99059fF775485246999027B3197955': ethers.BigNumber.from('1000000000000000000'),
 
   };
 
@@ -122,7 +127,7 @@ const check = async () => {
 
   if (ops && ops.length > 0) {
     const useGasPrice = (await getGasPrice(exchange.pancake.provider));
-    const txes = await (Promise.all(ops.slice(0, 1).map(([chain]) => {
+    const txes = await (Promise.all(ops.slice(0, 1).map(async ([chain]) => {
       const { routers, path } = chain.reduce((r, x) => {
         if (tokens[x]) {
           return { routers: r.routers, path: r.path.concat([x]) };
@@ -139,20 +144,48 @@ const check = async () => {
       }, { routers: [], path: [] });
       console.log(`routers: ${routers.join(',')}
 path: ${path.join(',')}`);
-      const aTx = dexbitrage.bitrage(startAmounts[path[0]] || 0, routers, path, {
-        ...useGasPrice,
-        gasLimit: 1000000,
-      });
-      return aTx;
+      try {
+        const gasLimit = await dexbitrage.estimateGas.bitrage(startAmounts[path[0]] || 0, routers, path, {
+          ...useGasPrice,
+        //        gasLimit: 1000000,
+        });
+        console.log(`gas to be used: ${gasLimit}`);
+        const aTx = await dexbitrage.bitrage(startAmounts[path[0]] || 0, routers, path, {
+          ...useGasPrice,
+        //        gasLimit: 1000000,
+        });
+        return aTx;
+      } catch (e) {
+        console.log('error');
+        return Promise.resolve({ hash: 'unknown', wait: Promise.resolve({ hash: 'unknown' }) });
+      }
     // process.exit(0);
     })));
-    const pushedTx = await Promise.all(txes);
-    console.log(`pushedTxes: ${pushedTx.map((tx) => tx.hash).join(' , ')}`);
     try {
-      const minedTx = await Promise.all(txes.map((tx) => tx.wait()));
-      console.log(`minedTxes: ${minedTx.map((tx) => tx.hash).join(' , ')}`);
+      const pushedTx = await Promise.all(txes.map(async (tx) => {
+        try {
+          const x = await tx;
+          return x;
+        } catch (e) {
+          console.log(`failed ${e.message}`);
+          return { hash: 'unknown', wait: Promise.resolve({ hash: 'unknown' }) };
+        }
+      }));
+      console.log(`pushedTxes: ${pushedTx.map((tx) => (tx || {}).hash).join(' , ')}`);
+      try {
+        const minedTx = await Promise.all(txes.map(async (tx) => {
+          try {
+            await tx.wait();
+          } catch (e) {
+
+          }
+        }));
+        console.log(`minedTxes: ${minedTx.map((tx) => (tx || {}).hash).join(' , ')}`);
+      } catch (e) {
+        console.log(`failed TX ${e.message}`);
+      }
     } catch (e) {
-      console.log(`failed TX ${e.message}`);
+      console.log(`failed ${e.message}`);
     }
     // process.exit(1);
   }

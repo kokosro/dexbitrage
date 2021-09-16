@@ -1,5 +1,10 @@
 const { ethers } = require('ethers');
 
+const isIgnored = (asset) => ['0xd7bf683cAd197f4f869678cdDC345b38B483d8E4',
+  '0x12e34cDf6A031a10FE241864c32fB03a4FDaD739',
+  '0x23396cF899Ca06c4472205fC903bDB4de249D6fC',
+  '0xacFC95585D80Ab62f67A14C566C1b7a49Fe91167'].includes(asset);
+
 const getPriceMap = async ({
   matrix, exchangeKeys, exchange, tokens,
 }) => {
@@ -12,7 +17,7 @@ const getPriceMap = async ({
   await Promise.all(bases.map(async (base) => {
     await Promise.all(Object.keys(matrix.common[base]).map(async (quote) => {
       await Promise.all(exchangeKeys.map(async (ex) => {
-        if (base == '0xacFC95585D80Ab62f67A14C566C1b7a49Fe91167' || quote == '0xacFC95585D80Ab62f67A14C566C1b7a49Fe91167' || !matrix[ex] || !matrix[ex][base] || !matrix[ex][base][quote] // || !['pancake','ape',,].includes(ex)
+        if (isIgnored(base) || isIgnored(quote) || !matrix[ex] || !matrix[ex][base] || !matrix[ex][base][quote] // || !['pancake','ape',,].includes(ex)
         ) {
           return;
         }
