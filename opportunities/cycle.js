@@ -122,7 +122,8 @@ const constructOpportunities = ({
   if (start.asset == current.asset
      && cycle > 1
   ) {
-    if (start.value.lt(current.value)) {
+    if (start.value.lt(current.value)
+        && current.value.sub(start.value).mul(10000).div(start.value).gt(500)) {
       //   console.log(`level${cycle} OP from ${tokens[start.asset].symbol} ${chainSymbols.join('->')} ${ethers.utils.formatUnits(current.value.sub(start.value), tokens[start.asset].decimals)}`);
       foundOps.push([chain, current.value.sub(start.value)]);
       return null;
