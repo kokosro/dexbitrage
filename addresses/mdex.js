@@ -1,0 +1,4 @@
+module.exports = {
+  factory: '0x3CD1C46068dAEa5Ebb0d3f55F6915B10648062B8',
+  router: '0x7DAe51BD3E3376B8c7c4900E9107f12Be3AF1bA8',
+};
