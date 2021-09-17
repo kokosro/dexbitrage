@@ -159,7 +159,7 @@ path: ${path.join(',')}`);
         console.log(`gas to be used: ${gasLimit}`);
         const aTx = await dexbitrage.bitrage(startAmounts[path[0]] || 0, routers, path, {
           ...useGasPrice,
-        //        gasLimit: 1000000,
+          gasLimit: 1200000,
         });
         return aTx;
       } catch (e) {
