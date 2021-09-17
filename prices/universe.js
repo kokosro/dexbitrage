@@ -1,9 +1,26 @@
 const { ethers } = require('ethers');
 
-const isIgnored = (asset) => ['0xd7bf683cAd197f4f869678cdDC345b38B483d8E4',
-  '0x12e34cDf6A031a10FE241864c32fB03a4FDaD739',
+const isIgnored = (asset1, asset2, exchange) => [
+  '0xd7bf683cAd197f4f869678cdDC345b38B483d8E4',
+  // '0x12e34cDf6A031a10FE241864c32fB03a4FDaD739',
   '0x23396cF899Ca06c4472205fC903bDB4de249D6fC',
-  '0xacFC95585D80Ab62f67A14C566C1b7a49Fe91167'].includes(asset);
+  '0xacFC95585D80Ab62f67A14C566C1b7a49Fe91167',
+  '0x67d012F731c23F0313CEA1186d0121779c77fcFE',
+].includes(asset1)
+|| [
+  '0xd7bf683cAd197f4f869678cdDC345b38B483d8E4',
+  // '0x12e34cDf6A031a10FE241864c32fB03a4FDaD739',
+  '0x23396cF899Ca06c4472205fC903bDB4de249D6fC',
+  '0xacFC95585D80Ab62f67A14C566C1b7a49Fe91167',
+  '0x67d012F731c23F0313CEA1186d0121779c77fcFE',
+].includes(asset2)
+      || ![
+        'pancake',
+        'ape',
+        'mdex',
+        'biswap',
+        //     'baby',
+      ].includes(exchange);
 
 const getPriceMap = async ({
   matrix, exchangeKeys, exchange, tokens,
@@ -17,7 +34,8 @@ const getPriceMap = async ({
   await Promise.all(bases.map(async (base) => {
     await Promise.all(Object.keys(matrix.common[base]).map(async (quote) => {
       await Promise.all(exchangeKeys.map(async (ex) => {
-        if (isIgnored(base) || isIgnored(quote) || !matrix[ex] || !matrix[ex][base] || !matrix[ex][base][quote] // || !['pancake','ape',,].includes(ex)
+        if (isIgnored(base, quote, ex) || !matrix[ex] || !matrix[ex][base] || !matrix[ex][base][quote]
+
         ) {
           return;
         }

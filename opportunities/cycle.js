@@ -58,7 +58,7 @@ const { ethers } = require('ethers');
 
 */
 
-const MAX_CYCLES = 3;
+const MAX_CYCLES = 2;
 
 const pickBestExchange = (prices, base, quote, used, startedFrom) => {
   const possibleExchanges = Object.keys(prices[base][quote]).filter((exchange) => {
@@ -83,9 +83,15 @@ const pickBestExchange = (prices, base, quote, used, startedFrom) => {
       bestPrice = prices[base][quote][ex];
     }
   }
-  // if (['pancake'].includes(bestExchange)) {
-  return bestExchange;
-  //  }
+  if ([
+    'pancake',
+    'biswap',
+    'ape',
+    'mdex',
+    // 'baby',
+  ].includes(bestExchange)) {
+    return bestExchange;
+  }
   return null;
 };
 
@@ -149,7 +155,7 @@ const constructOpportunities = ({
       return null;
     }
     const price = prices[current.asset][quote][exchange];
-    const nextValue = current.value.mul(price).div(ethers.BigNumber.from(10).pow(tokens[current.asset].decimals)).mul(9950).div(10000);
+    const nextValue = current.value.mul(price).div(ethers.BigNumber.from(10).pow(tokens[current.asset].decimals)).mul(10000).div(10000);
     let wasUsed = JSON.parse(JSON.stringify(used));
     if (cycle > 0) {
       wasUsed = markUsed(current.asset, quote, exchange, used);
