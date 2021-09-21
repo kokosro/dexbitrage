@@ -58,7 +58,7 @@ const { ethers } = require('ethers');
 
 */
 
-const MAX_CYCLES = 2;
+const MAX_CYCLES = 3;
 
 const pickBestExchange = (prices, base, quote, used, startedFrom) => {
   const possibleExchanges = Object.keys(prices[base][quote]).filter((exchange) => {
@@ -88,7 +88,7 @@ const pickBestExchange = (prices, base, quote, used, startedFrom) => {
     'biswap',
     'ape',
     'mdex',
-    // 'baby',
+    'baby',
   ].includes(bestExchange)) {
     return bestExchange;
   }
@@ -117,7 +117,7 @@ const markUsed = (base, quote, exchange, used) => {
 
 const constructOpportunities = ({
   start, cycle, prices, current, chain, used, tokens,
-  foundOps,
+  foundOps, minP = 350, maxP = 1250,
 }) => {
   const chainSymbols = chain.map((x) => {
     if (!tokens[x]) return x;
@@ -128,9 +128,10 @@ const constructOpportunities = ({
   if (start.asset == current.asset
      && cycle > 1
   ) {
+    const winP = current.value.sub(start.value).mul(10000).div(start.value);
     if (start.value.lt(current.value)
-        && current.value.sub(start.value).mul(10000).div(start.value).gt(500)) {
-      //   console.log(`level${cycle} OP from ${tokens[start.asset].symbol} ${chainSymbols.join('->')} ${ethers.utils.formatUnits(current.value.sub(start.value), tokens[start.asset].decimals)}`);
+        && winP.gt(minP) && winP.lt(maxP)) {
+    //  console.log(`level${cycle} OP from ${tokens[start.asset].symbol} ${chainSymbols.join('->')} ${ethers.utils.formatUnits(current.value.sub(start.value), tokens[start.asset].decimals)}`);
       foundOps.push([chain, current.value.sub(start.value)]);
       return null;
     }
@@ -170,6 +171,8 @@ const constructOpportunities = ({
       chain: chain.concat([exchange, quote]),
       tokens,
       foundOps,
+      minP,
+      maxP,
     });
     if (ops && ops.length > 0) {
       // console.log(ops);
@@ -185,7 +188,7 @@ const constructOpportunities = ({
 };
 
 const build = ({
-  universe, tokens, cycles = 3, bases,
+  universe, tokens, cycles = 3, bases, minP = 350, maxP = 1250,
 }) => {
   const prices = universe.byAsset;
   //  const bases = Object.keys(prices);
@@ -201,7 +204,7 @@ const build = ({
         asset: base,
         value: ethers.BigNumber.from(10).pow(tokens[base].decimals),
       };
-      console.log(`level0 building ops from ${tokens[base].symbol}`);
+      console.log(`building ops from ${tokens[base].symbol}`);
       const ops = [];
       constructOpportunities({
         start,
@@ -212,10 +215,16 @@ const build = ({
         used: {},
         tokens,
         foundOps: ops,
+        minP,
+        maxP,
       });
       if (ops && ops.length > 0) {
-      //  console.log(JSON.stringify(ops, null, 2));
+        for (let j = 0; j < ops.length; j++) {
+          opportunities.push(ops[j]);
+        }
+        //  console.log(JSON.stringify(ops, null, 2));
         // process.exit(1);
+        /*
         const best = ops.reduce((r, [chain, value]) => {
           if (!r) {
             return [chain, value];
@@ -228,8 +237,40 @@ const build = ({
           }
           return r;
         }, null);
+        const nextBest = ops.reduce((r, [chain, value]) => {
+          if (!r) {
+            if (best) {
+              if (best[0].join('-') == chain.join('-')) {
+                return null;
+              }
+              return [chain, value];
+            }
+            return [chain, value];
+          }
+          if (r[1].lt(value)) {
+            if (best) {
+              if (best[0].join('-') == chain.join('-')) {
+                return r;
+              }
+              return [chain, value];
+            }
+            return [chain, value];
+          }
+          if (r[1].lte(value) && r[0].length > chain.length) {
+            if (best[0].join('-') == chain.join('-')) {
+              return r;
+            }
+            return [chain, value];
+          }
+          return r;
+        }, null);
         console.log(`BEST opportunity ${tokens[base].symbol} profit: ${ethers.utils.formatUnits(best[1], tokens[base].decimals)} chain: ${best[0].map((x) => (tokens[x] ? tokens[x].symbol : x)).join('->')}`);
         opportunities.push(best);
+        if (nextBest) {
+          console.log(`NEXT BEST opportunity ${tokens[base].symbol} profit: ${ethers.utils.formatUnits(nextBest[1], tokens[base].decimals)} chain: ${nextBest[0].map((x) => (tokens[x] ? tokens[x].symbol : x)).join('->')}`);
+          opportunities.push(nextBest);
+        }
+*/
       } else {
         console.log(`no ops from ${tokens[base].symbol}`);
       }

@@ -13,6 +13,12 @@ const prices = require('./prices');
 
 const privateKeyMainnet = fs.readFileSync('.mainnet').toString().trim();
 
+tokens['0xf21768ccbc73ea5b6fd3c687208a7c2def2d966e'] = {
+  decimals: 18,
+  symbol: 'REEF',
+  name: 'REEF',
+};
+
 const getGasPrice = async (provider) => {
   const currentGasPrice = await provider.getGasPrice();
   let maxFeePerGas = ethers.BigNumber.from('6000000000');
@@ -100,9 +106,11 @@ const check = async () => {
     return base;
   })))).filter((x) => !!x);
   */ [
+      '0xf21768ccbc73ea5b6fd3c687208a7c2def2d966e',
       '0x12e34cDf6A031a10FE241864c32fB03a4FDaD739',
       '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
       '0xE02dF9e3e622DeBdD69fb838bB799E3F168902c5',
+
       // '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82',
 
       '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
@@ -115,26 +123,75 @@ const check = async () => {
       // '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
     ];
   const startAmounts = {
-    '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c': ethers.BigNumber.from('70000000000000000'), // WBNB
-    '0xE02dF9e3e622DeBdD69fb838bB799E3F168902c5': ethers.BigNumber.from('5000000000000000000'), // BAKE
-    '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82': ethers.BigNumber.from('100000000000000000'), // CAKE
-    '0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402': ethers.BigNumber.from('300000000000000000'), // DOT
-    '0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47': ethers.BigNumber.from('5000000000000000000'), // ADA
-    '0x55d398326f99059fF775485246999027B3197955': ethers.BigNumber.from('10000000000000000000'), // BUSD
-    '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3': ethers.BigNumber.from('10000000000000000000'), // DAI
-    '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d': ethers.BigNumber.from('10000000000000000000'), // USDC
-    '0x2170Ed0880ac9A755fd29B2688956BD959F933F8': ethers.BigNumber.from('3000000000000000'), // ETH
-    '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c': ethers.BigNumber.from('200000000000000'), // BTC
-    '0x12e34cDf6A031a10FE241864c32fB03a4FDaD739': ethers.BigNumber.from('1000000000000000000000000'),
+    //    '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c': ethers.BigNumber.from('300000000000000000'), // WBNB
+    //  '0xE02dF9e3e622DeBdD69fb838bB799E3F168902c5': ethers.BigNumber.from('2000000000000000000'), // BAKE
+    //  '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82': ethers.BigNumber.from('100000000000000000'), // CAKE
+    //  '0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402': ethers.BigNumber.from('400000000000000000'), // DOT
+    //    '0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47': ethers.BigNumber.from('20000000000000000000'), // ADA
+    //    '0x55d398326f99059fF775485246999027B3197955': ethers.BigNumber.from('20000000000000000000'), // BUSD
+    '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3': ethers.BigNumber.from('20000000000000000000'), // DAI
+    //    '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d': ethers.BigNumber.from('20000000000000000000'), // USDC
+    //    '0x2170Ed0880ac9A755fd29B2688956BD959F933F8': ethers.BigNumber.from('2000000000000000'), // ETH
+    //    '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c': ethers.BigNumber.from('100000000000000'), // BTC
+    // '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56': ethers.BigNumber.from('10000000000000000000'), // USDT
+    //    '0x12e34cDf6A031a10FE241864c32fB03a4FDaD739': ethers.BigNumber.from('10000000000000000000000000'),
+    //    '0xf21768ccbc73ea5b6fd3c687208a7c2def2d966e': ethers.BigNumber.from('20000000000000000000'),
   };
 
-  const ops = build({ universe: priceMap, tokens, bases: canBeBases });
+  const ops = build({
+    universe: priceMap, tokens, bases: canBeBases, minP: 350, maxP: 9500,
+  });
   // process.exit();
   /// const [firstOp] = ops;
 
   if (ops && ops.length > 0) {
     const useGasPrice = (await getGasPrice(exchange.pancake.provider));
-    const txes = await (Promise.all(ops.map(async ([chain]) => {
+    const usedPairs = {};
+    const filteredOps = ops.reduce((r, [chain]) => {
+      const sstart = chain[0];
+      const sthrough = chain[1];
+      const send = chain[2];
+
+      for (let i = 0; i < chain.length - 1; i += 2) {
+        const start = chain[i];
+        const through = chain[i + 1];
+        const end = chain[i + 2];
+        if ((usedPairs[start] && usedPairs[start][through] && usedPairs[start][through][end])
+            || (usedPairs[end] && usedPairs[end][through] && usedPairs[end][through][start])
+            // && (!(start == sstart && sthrough == through && send == end))
+        ) {
+          return r;
+        }
+        if (!usedPairs[start]) {
+          usedPairs[start] = {};
+        }
+        if (!usedPairs[end]) {
+          usedPairs[end] = {};
+        }
+        if (!usedPairs[start][through]) {
+          usedPairs[start][through] = {};
+        }
+        if (!usedPairs[end][through]) {
+          usedPairs[end][through] = {};
+        }
+        if (!usedPairs[start][through][end]) {
+          usedPairs[start][through][end] = 0;
+        }
+        if (!usedPairs[end][through][start]) {
+          usedPairs[end][through][start] = 0;
+        }
+        usedPairs[start][through][end] += 1;
+        usedPairs[end][through][start] += 1;
+        if (usedPairs[start][through][end] > 1
+            || usedPairs[end][through][start] > 1
+        ) {
+          return r;
+        }
+      }
+      return r.concat([chain]);
+    }, []);
+
+    const txes = await (Promise.all(filteredOps.map(async (chain) => {
       const { routers, path } = chain.reduce((r, x) => {
         if (tokens[x]) {
           return { routers: r.routers, path: r.path.concat([x]) };
@@ -145,25 +202,27 @@ const check = async () => {
             path: r.path,
           };
         }
-        console.log(`error ${x} unknown`);
+        //        console.log(`error ${x} unknown`);
         process.exit(1);
         return r;
       }, { routers: [], path: [] });
-      console.log(`routers: ${routers.join(',')}
-path: ${path.join(',')}`);
+      //    console.log(`routers: ${routers.join(',')}
+      // path: ${path.join(',')}`);
+      const chainSymbols = chain.map((s) => (tokens[s] ? tokens[s].symbol : s));
       try {
         const gasLimit = await dexbitrage.estimateGas.bitrage(startAmounts[path[0]] || 0, routers, path, {
           ...useGasPrice,
         //        gasLimit: 1000000,
         });
-        console.log(`gas to be used: ${gasLimit}`);
+        console.log(`gas to be used: ${gasLimit} ${chainSymbols.join('->')}`);
         const aTx = await dexbitrage.bitrage(startAmounts[path[0]] || 0, routers, path, {
           ...useGasPrice,
           gasLimit: 1200000,
         });
+        console.log(`${aTx.hash} ${chainSymbols.join('->')}`);
         return aTx;
       } catch (e) {
-        console.log('error');
+        console.log(`error ${chainSymbols.join('->')}`);
         return Promise.resolve({ hash: 'unknown', wait: Promise.resolve({ hash: 'unknown' }) });
       }
     // process.exit(0);
@@ -174,11 +233,11 @@ path: ${path.join(',')}`);
           const x = await tx;
           return x;
         } catch (e) {
-          console.log(`failed ${e.message}`);
+          // console.log(`failed ${e.message}`);
           return { hash: 'unknown', wait: Promise.resolve({ hash: 'unknown' }) };
         }
       }));
-      console.log(`pushedTxes: ${pushedTx.map((tx) => (tx || {}).hash).join(' , ')}`);
+      // console.log(`pushedTxes: ${pushedTx.map((tx) => (tx || {}).hash).join(' , ')}`);
       try {
         const minedTx = await Promise.all(txes.map(async (tx) => {
           try {
@@ -187,12 +246,12 @@ path: ${path.join(',')}`);
 
           }
         }));
-        console.log(`minedTxes: ${minedTx.map((tx) => (tx || {}).hash).join(' , ')}`);
+        // console.log(`minedTxes: ${minedTx.map((tx) => (tx || {}).hash).join(' , ')}`);
       } catch (e) {
-        console.log(`failed TX ${e.message}`);
+        // console.log(`failed TX ${e.message}`);
       }
     } catch (e) {
-      console.log(`failed ${e.message}`);
+      // console.log(`failed ${e.message}`);
     }
     // process.exit(1);
   }

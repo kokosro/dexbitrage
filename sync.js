@@ -4,8 +4,8 @@ const fs = require('fs');
 const providerUrl = require('./providers');
 
 const indexStart = {
-  pancake: 2104,
-  ape: 18,
+  pancake: 10672,
+  //  ape: 18,
 
 };
 
@@ -23,6 +23,7 @@ const getAllPairs = async (type) => {
   const factory = new ethers.Contract(address[type].factory, abi.factory, provider);
   const totalPairs = await factory.allPairsLength();
   const n = parseInt(`${totalPairs}`);
+  if (!indexStart[type]) { console.log(`${type} already done`); return; }
   for (let i = indexStart[type] || 0; i < totalPairs; i++) {
     try {
       const pairAddress = await factory.allPairs(i);
