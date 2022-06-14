@@ -30,6 +30,7 @@
     "ethers": "^5.4.6",
     "ganache": "^6.4.5",
     "hardhat": "^2.6.4",
+    "node-dijkstra": "^2.5.0",
     "solc": "^0.8.7-fixed"
   }
 }
